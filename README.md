@@ -1,78 +1,37 @@
-# Topsis
-Topsis Assignment 
-import pandas as pd
-import numpy as np
-import sys
+# TOPSIS Assignment
 
-def validate_inputs(input_file, weights, impacts):
-    # Check if input file exists
-    try:
-        data = pd.read_csv(input_file)
-    except FileNotFoundError:
-        raise FileNotFoundError(f"File '{input_file}' not found.")
+This project implements the **TOPSIS (Technique for Order of Preference by Similarity to Ideal Solution)** method for multi-criteria decision-making. The tool ranks alternatives based on given weights and impacts of criteria.
 
-    # Check if the file contains at least 3 columns
-    if data.shape[1] < 3:
-        raise ValueError("Input file must contain at least three columns.")
+## Features
+- **Input:** CSV file containing alternatives and criteria.
+- **Processing:** 
+  - Normalize the decision matrix.
+  - Apply weights and impacts to criteria.
+  - Calculate distances from ideal best and worst solutions.
+  - Rank alternatives based on their closeness to the ideal solution.
+- **Output:** A CSV file with TOPSIS scores and rankings.
 
-    # Check if all columns except the first contain numeric values
-    if not np.issubdtype(data.iloc[:, 1:].dtypes.values, np.number):
-        raise ValueError("From the 2nd to the last column, all values must be numeric.")
+## How to Use
+1. Run the script with the following command:
+   ```
+   python <program.py> <InputDataFile> <Weights> <Impacts> <ResultFileName>
+   ```
+   Example:
+   ```
+   python topsis.py input.csv "1,2,3,4" "+,-,+,+" output.csv
+   ```
+2. The program validates inputs and generates a ranked output file.
 
-    # Check if weights and impacts are valid
-    weights = list(map(float, weights.split(",")))
-    impacts = impacts.split(",")
+## Prerequisites
+- Python 3.x
+- Required libraries: pandas, numpy
 
-    if len(weights) != len(impacts) or len(weights) != (data.shape[1] - 1):
-        raise ValueError("Number of weights, impacts, and numeric columns must match.")
+## File Description
+- `input.csv`: Input data file with at least three columns (ID, criteria values).
+- `output.csv`: Result file with TOPSIS scores and rankings.
 
-    if not all(impact in ['+', '-'] for impact in impacts):
-        raise ValueError("Impacts must be either '+' or '-'.")
+## Notes
+- Impacts (`+` for benefit, `-` for cost) and weights must match the number of criteria.
+- Ensure numeric values for all criteria columns.
 
-    return data, weights, impacts
-
-def normalize_matrix(matrix):
-    return matrix / np.sqrt((matrix**2).sum(axis=0))
-
-def topsis(input_file, weights, impacts, result_file):
-    data, weights, impacts = validate_inputs(input_file, weights, impacts)
-
-    # Separate the criteria matrix and normalize it
-    criteria_matrix = data.iloc[:, 1:].values
-    normalized_matrix = normalize_matrix(criteria_matrix)
-
-    # Apply weights
-    weighted_matrix = normalized_matrix * weights
-
-    # Determine ideal best and ideal worst
-    ideal_best = np.where(np.array(impacts) == '+', weighted_matrix.max(axis=0), weighted_matrix.min(axis=0))
-    ideal_worst = np.where(np.array(impacts) == '+', weighted_matrix.min(axis=0), weighted_matrix.max(axis=0))
-
-    # Calculate distances from ideal best and ideal worst
-    distance_best = np.sqrt(((weighted_matrix - ideal_best)**2).sum(axis=1))
-    distance_worst = np.sqrt(((weighted_matrix - ideal_worst)**2).sum(axis=1))
-
-    # Calculate TOPSIS scores
-    scores = distance_worst / (distance_best + distance_worst)
-
-    # Rank the scores
-    data['Topsis Score'] = scores
-    data['Rank'] = scores.argsort()[::-1] + 1
-
-    # Save the result to the specified file
-    data.to_csv(result_file, index=False)
-    print(f"Result file saved successfully at: {result_file}")
-
-if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        print("Usage: python <program.py> <InputDataFile> <Weights> <Impacts> <ResultFileName>")
-    else:
-        input_file = sys.argv[1]
-        weights = sys.argv[2]
-        impacts = sys.argv[3]
-        result_file = sys.argv[4]
-
-        try:
-            topsis(input_file, weights, impacts, result_file)
-        except Exception as e:
-            print(f"Error: {e}")
+---
